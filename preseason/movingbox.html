@@ -1,0 +1,21 @@
+<html>
+    <div id="my_box_realtime" style= "background-color: red; position: absolute; right: 70; bottom: 70; min-width: 100px; min-height: 100px"></div>
+    <script type="text/javascript">
+      let box = document.getElementById("my_box_realtime")
+    const moveright = () => {
+        box.style.right = (box.style.right.slice(0,-2) - 1)  + "px"
+    }
+
+    const movedown = () => {
+        box.style.bottom = (box.style.right.slice(0,-2) - 1) + "px"
+
+    }
+    setInterval(function () {
+        console.log("interval running")
+        moveright()
+        movedown()
+
+    }, 500)
+
+    </script>
+</html>

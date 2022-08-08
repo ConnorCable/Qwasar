@@ -1,0 +1,15 @@
+{
+  "name": "my_first_backend",
+  "version": "1.0.0",
+  "description": "my first backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "console.log(\"Hello\")"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.1",
+    "express-basic-auth": "^1.2.1"
+  }
+}

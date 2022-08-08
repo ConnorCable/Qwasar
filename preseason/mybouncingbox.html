@@ -1,0 +1,82 @@
+<html style='background-color: black'>
+<div id="my_bouncing_box"
+  style="background-color: blue; border-radius: 3px; position: absolute; left: 0px; top: 0px; min-width: 100px; min-height: 100px; text-align: center; font-weight: bold; color: #999;">
+  cable_c</div>
+<script type="text/javascript">
+  let box = document.getElementById("my_bouncing_box")
+
+
+  let originx = 0
+  let originy = 0
+  
+  const moveright = () => {
+    box.style.left = originx++ + "px"
+
+  }
+
+  const moveup = () => {
+    box.style.top = originy-- + "px"
+
+  }
+
+  const moveleft= () => {
+    box.style.left = originx-- + "px"
+  }
+
+  const movedown = () => {
+    box.style.top = originy++ + "px"
+  }
+
+
+  xselector = 0
+  yselector = 0
+
+  let movesx = [moveright, moveleft]
+  let movesy = [movedown, moveup]
+
+  const mover = () => {
+    let rightedge = innerWidth
+    let bottomheight = innerHeight
+    let leftedge = 0
+    let topheight = 0
+
+    console.log("dimensions are -->" , rightedge, leftedge, topheight, bottomheight)
+    console.log(originx, originy)
+
+
+    if(originx + 100 == rightedge){
+      xselector = 1
+    }
+    if(originx == leftedge){
+      xselector = 0
+    }
+    if(originy + 100 == bottomheight){
+      yselector = 1
+    }
+    if(originy == topheight){
+      yselector = 0
+    }
+
+    movesx[xselector]()
+    movesy[yselector]()
+
+    }
+
+
+
+
+    
+
+
+
+    
+
+
+
+
+  setInterval(function () {
+    //  console.log("working")
+    mover()
+
+  }, 1)
+</script>

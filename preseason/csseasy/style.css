@@ -1,0 +1,44 @@
+.container {
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.container > * {
+    flex: 1 100%;
+    padding: 10px;
+}
+
+.child {
+    text-align: center;
+}
+
+.header {
+    background-color: #00B7EB;
+}
+
+.hero {
+    background-color: #FF0000;
+}
+
+.content {
+    background-color: #00FF00;
+}
+
+.sidebar {
+    background-color: #800080;
+}
+
+.footer {
+    background-color: #444444;
+}
+
+.share {
+}
+
+
+@media all and (min-width: 600px) {
+    .share {flex: 1 0 0;}
+    
+}
+
+
