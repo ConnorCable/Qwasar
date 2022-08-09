@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'sqlite3'
-set :port, 8000
+require 'erb'
+set :port, 3000
 enable :sessions
 
 
@@ -29,10 +30,10 @@ class User
     end
 
     def create()
-       id = rand(1..100)
+       @id = @@db.last_insert_row_id
        @@db.execute("INSERT INTO users (firstname, lastname, age, password, email, id)
-                    VALUES (?,?,?,?,?,?)", [@firstname, @lastname, @age, @password, @email, id])
-        return id
+                    VALUES (?,?,?,?,?,?)", [@firstname, @lastname, @age, @password, @email, @id])
+        return @id
     end
 
     def find(param:, val:)
@@ -74,13 +75,17 @@ end
 
 user = User.new("Connor", "Cable", 26,  "1234", "223d@gmail.com")
 user.create
+user.all
 
 get '/' do
-    "Hello World"
+    @user = User.new("Admin", "Cable", 26,  "1234", "223d@gmail.com")
+    @results = @user.all
+    erb :index, {:locals => params}
 end
 
 get '/users' do
-    results = user.all
+    @user = User.new("Admin", "Cable", 26,  "1234", "223d@gmail.com")
+    results = @user.all
     results.each{ |row| 
     row.delete_at(3)
     puts row.join(',')}
@@ -102,7 +107,7 @@ end
 put '/users' do
     if session[:logged_in]
         puts "password changed"
-        puts user.update(id:session[user_id], attribute:"password", value: params["password"] )
+        puts user.update(id:session[:user_id], attribute:"password", value: params["password"] )
     end
 end
 
@@ -115,8 +120,31 @@ post '/sign_in' do
         puts "User Authenticated"
         @id = user.find_id(param: "email", val: params["email"])
         session[:user_id] = @id
-        session[:logged_in] = true
+        session[:logged_in] = true # returning to a session 
+        redirect "/"
     else
         puts "User login not found"
+        redirect "/sign_in"
+    end
+end
+
+delete 'sign_out' do
+    if session[:logged_in]
+        session.clear
+        halt 204
+    else
+        puts "No user to log out!"
+        redirect "/"
+    end
+end
+
+delete "/users" do
+    if session[:logged_in]
+        user.destroy(id: session[:user_id])
+        session.clear
+        halt 204
+    else
+        puts "No user to delete!"
+        redirect "/"
     end
 end
