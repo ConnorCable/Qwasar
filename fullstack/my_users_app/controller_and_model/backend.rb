@@ -73,10 +73,6 @@ class User
     
 end
 
-user = User.new("Connor", "Cable", 26,  "1234", "223d@gmail.com")
-user.create
-user.all
-
 get '/' do
     @user = User.new("Admin", "Cable", 26,  "1234", "223d@gmail.com")
     @results = @user.all
