@@ -62,7 +62,7 @@ class User
 
     def update( id:, attribute:, value:)
         @@db.execute("UPDATE users SET #{attribute} = ? WHERE id=?", value, id)
-        find(db, id:id)
+        find_sanitized(db, id:id)
     end
 
     def destroy(id:)
@@ -101,7 +101,7 @@ end
 
 put '/users' do
     if session[:logged_in]
-        
+        puts user.update(id:session[user_id], attribute:"password", value: params["password"] )
     end
 end
 
