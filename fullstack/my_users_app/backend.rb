@@ -101,6 +101,7 @@ end
 
 put '/users' do
     if session[:logged_in]
+        puts "password changed"
         puts user.update(id:session[user_id], attribute:"password", value: params["password"] )
     end
 end
