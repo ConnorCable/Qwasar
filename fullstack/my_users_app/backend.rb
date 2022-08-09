@@ -99,6 +99,12 @@ post '/users' do
     results.each{ |row| puts row.join(',')}
 end
 
+put '/users' do
+    if session[:logged_in]
+        
+    end
+end
+
 
 post '/sign_in' do
     # input is a hash named params
@@ -106,14 +112,10 @@ post '/sign_in' do
 
     if user.user_auth(email: params["email"], password: params["password"])
         puts "User Authenticated"
-        @id = user.find_id(param: "password", val: params["password"])
+        @id = user.find_id(param: "email", val: params["email"])
         session[:user_id] = @id
         session[:logged_in] = true
     else
         puts "User login not found"
     end
-
-    
-
-
 end
