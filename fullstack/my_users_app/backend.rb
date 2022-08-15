@@ -1,9 +1,11 @@
 require 'sinatra'
 require 'sqlite3'
 require 'erb'
-set :port, 3000
+set :port, 8080
+set :bind, '0.0.0.0'
 enable :sessions
 
+#URL = http://web-c10603eda-e7b8.docode.us.qwasar.io
 
 db = SQLite3::Database.new "db.sql"
 
@@ -21,7 +23,7 @@ SQL
 class User
     @@db = SQLite3::Database.open "db.sql"
 
-    def initialize( firstname, lastname, age, password, email)
+    def self.initialize( firstname, lastname, age: 0 , password: 1234, email: "1234@gmail.com")
         @firstname = firstname
         @lastname = lastname
         @age = age
@@ -29,59 +31,69 @@ class User
         @email = email
     end
 
-    def create()
-       @id = @@db.last_insert_row_id
+    def self.create(firstname:, lastname:, age: 0 , password: 1234, email: "1234@gmail.com")
+       @id = rand(1..1000)
        @@db.execute("INSERT INTO users (firstname, lastname, age, password, email, id)
-                    VALUES (?,?,?,?,?,?)", [@firstname, @lastname, @age, @password, @email, @id])
+                    VALUES (?,?,?,?,?,?)", [firstname, lastname, age, password, email, @id])
         return @id
     end
 
-    def find(param:, val:)
+    def self.find(param:, val:)
         results = @@db.query("SELECT * FROM users WHERE #{param}=?", val)
         return results
     end
 
-    def find_sanitized(param:, val:)
+    def self.find_sanitized(param:, val:)
         results = @@db.query("SELECT firstname, lastname, age, email, id FROM users WHERE #{param}=?", val)
         return results
     end
 
-    def user_auth(email:, password:)
+    def self.user_auth(email:, password:)
         results = @@db.query("SELECT 1 FROM users WHERE email=? AND password=?", email, password)
         return results
     end
 
-    def find_id(param:, val:)
-        results = @@db.query("SELECT id FROM users WHERE #{param}=?", val)
+    def self.find_id(param:, val:)
+        results = @@db.get_first_value("SELECT id FROM users WHERE #{param}=?", val)
         return results
     end
 
-    def all()
+    def self.all()
         results = @@db.query("SELECT * FROM users")
         return results
     end
 
-    def update( id:, attribute:, value:)
-        @@db.execute("UPDATE users SET #{attribute} = ? WHERE id=?", value, id)
-        find_sanitized(db, id:id)
+    def self.update( id:, attribute:, value:)
+        @@db.execute("UPDATE users SET #{attribute}=? WHERE id=?", value, id)
     end
 
-    def destroy(id:)
+    def self.update_password( id:, value:)
+        @@db.execute("UPDATE users SET password =? WHERE id=?", value, id)
+    end
+
+    def self.updatewithclass(email:, attribute:, value:)
+        @@db.execute("UPDATE users SET #{attribute}=? WHERE email=?", value, email)
+    end
+
+    def self.destroy(id:)
         @@db.execute("DELETE FROM users WHERE id=?", id)
     end
 
     
 end
 
+
+User.create(firstname:"Connor", lastname:"Cable", email: "testemailforgaetan")
+User.updatewithclass(email:"testemailforgaetan", attribute:"age", value:"34")
+puts User.all().each {|row| puts row.join(",")}
+
 get '/' do
-    @user = User.new("Admin", "Cable", 26,  "1234", "223d@gmail.com")
-    @results = @user.all
+    @results = User.all
     erb :index, {:locals => params}
 end
 
 get '/users' do
-    @user = User.new("Admin", "Cable", 26,  "1234", "223d@gmail.com")
-    results = @user.all
+    results = User.all
     results.each{ |row| 
     row.delete_at(3)
     puts row.join(',')}
@@ -94,16 +106,15 @@ post '/users' do
     @password = params["password"]
     @email = params["email"]
 
-    @user = User.new(@firstname, @lastname, @age, @password, @email)
-    @id = @user.create
-    results = user.find_sanitized(param: "id", val: @id)
+    @id = User.create(firstname: @firstname, lastname: @lastname, age: @age, password: @password, email:@email)
+    results = User.find_sanitized(param: "id", val: @id)
     results.each{ |row| puts row.join(',')}
 end
 
 put '/users' do
-    if session[:logged_in]
+    if session[:user_id]
         puts "password changed"
-        puts user.update(id:session[:user_id], attribute:"password", value: params["password"] )
+        puts User.update_password(id: session[:user_id], value: params[:password] )
     end
 end
 
@@ -112,11 +123,15 @@ post '/sign_in' do
     # input is a hash named params
     # {email: "1234@gmail.com", password:"1234"
 
-    if user.user_auth(email: params["email"], password: params["password"])
-        puts "User Authenticated"
-        @id = user.find_id(param: "email", val: params["email"])
+    if User.user_auth(email: params["email"], password: params["password"])
+        @id = User.find_id(param: "email", val: params["email"])
+        if @id
+            puts "User Authenticated"
+        end
         session[:user_id] = @id
-        session[:logged_in] = true # returning to a session 
+        puts session[:user_id]
+        puts "Id logged in? -->"
+
         redirect "/"
     else
         puts "User login not found"
@@ -124,8 +139,8 @@ post '/sign_in' do
     end
 end
 
-delete 'sign_out' do
-    if session[:logged_in]
+delete '/sign_out' do
+    if session[:user_id]
         session.clear
         halt 204
     else
@@ -135,10 +150,11 @@ delete 'sign_out' do
 end
 
 delete "/users" do
-    if session[:logged_in]
-        user.destroy(id: session[:user_id])
+    if session[:user_id]
+        User.destroy(id: session[:user_id])
         session.clear
         halt 204
+        puts "User deleted!"
     else
         puts "No user to delete!"
         redirect "/"
