@@ -1,7 +1,7 @@
 require 'csv'
 
 class MySqliteRequest
-    
+
     def initialize()
         @headers = nil
         @table_name = nil
@@ -43,18 +43,22 @@ class MySqliteRequest
     def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well
         table = []
         headers = nil
-        CSV.foreach(path, headers: true, header_converters: :symbol) do |row|
-            row.each do |key, val|
-                if Integer(val, exception:false).nil?
+        CSV.foreach(path, headers: true, header_converters: :symbol) do |hash| # iterate through rows of the CSV
+            hash.each do |key, val| # iterate through the hash of the row
+                if Integer(val, exception:false).nil? # if the value can be cast as an integer, do so
                     next
                 end
-                row[key] = val.to_i
+                hash[key] = val.to_i # cast it to integer
             end
-            headers ||= row.headers
-            table << row.to_h
+            headers ||= hash.headers
+            table << hash.to_h # table is an array, append the hash to it as a hash
         end
         @table = table
         @headers = headers
+        puts "======"
+        puts @table.class # does not contain headers
+        puts "======"
+        self
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
@@ -78,7 +82,7 @@ class MySqliteRequest
         self
     end
 
-    def run_where() # pushes the results of the "where" query to @where results, which is a narrowed data set from our original table
+    def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table
         @table.each do |row|
             if row[@where_column.to_sym] == @where_criteria
                 @where_results.push(row)
@@ -103,12 +107,12 @@ class MySqliteRequest
     # [{:A=>A...},{:B=>B...}, {:C=>C...} ]
     # I need to take a specific key:value pair for each hash, and sort (ascending, descending) the array of hashes based on the value of the key:value pair
 
-    def order(order, column_name)
+    def order(order, column_name) # order = string, column name = string
         table = @table.sort_by{|hsh| hsh[column_name.to_sym]}
-        if order == "desc"
+        if order == "asc"
             @table.reverse!
         end
-        puts table
+        puts @table
         self
     end
 
@@ -139,14 +143,14 @@ end
 csvr = MySqliteRequest.new
 #csvr.from("nba_player_data").run_from.select("name", "weight").where("weight", "215").run_where.run_select
 #csvr.from("nba_player_data").join("name","nba_players.csv","Player").run_join.order("asc","weight")
-csvr.table_builder("mergeddb.csv").order
+csvr.table_builder("mergeddb.csv").order("desc", "name")
 
 testarr = [
-    {name: "connor", age: "100", job: "Coder"},
-    {name: "Josh", age: "2223", job: "Dockworker"},
-    {name: "Katy", age: "3333", job: "Student" }
+    {name: "connor", age: "0", job: "Coder"},
+    {name: "Josh", age: "23", job: "Dockworker"},
+    {name: "Katy", age: "1000", job: "Student" }
 ]
-
+# test order function
 def order(arr,order, column_name)
     table = arr.sort_by{|hsh| hsh[column_name.to_sym]}
     if order == "desc"
@@ -155,4 +159,4 @@ def order(arr,order, column_name)
     puts table
 end
 
-order(testarr,"asc","age")
+#order(testarr,"asc","age")
