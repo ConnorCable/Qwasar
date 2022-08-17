@@ -14,6 +14,7 @@ class MySqliteRequest
         @join_column_b = ''
         @where_results = []
         @select_results = []
+        @values = []
     end
 
 
@@ -43,7 +44,7 @@ class MySqliteRequest
     def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well
         table = []
         headers = nil
-        CSV.foreach(path, headers: true, header_converters: :symbol) do |hash| # iterate through rows of the CSV
+        CSV.foreach(path, headers: true) do |hash| # iterate through rows of the CSV
             hash.each do |key, val| # iterate through the hash of the row
                 if Integer(val, exception:false).nil? # if the value can be cast as an integer, do so
                     next
@@ -55,9 +56,7 @@ class MySqliteRequest
         end
         @table = table
         @headers = headers
-        puts "======"
-        puts @table.class # does not contain headers
-        puts "======"
+        
         self
     end
 
@@ -91,28 +90,19 @@ class MySqliteRequest
         self
     end
 
-    def join(column_on_a, filename_db_b, columname_on_db_b) # gets the filename to be joined, as well as the columns to join
-        @join_column_a = column_on_a
-        @db_b = filename_db_b
-        @join_column_b = columname_on_db_b
-        self
-    end
-
-    # 
-    #Order Implement an order method which will received two parameters, order (:asc or :desc) and column_name.
-    #It will sort depending on the order base on the column_name.
-    #It will be prototyped:
-    
-    # given: Array of hashes
-    # [{:A=>A...},{:B=>B...}, {:C=>C...} ]
-    # I need to take a specific key:value pair for each hash, and sort (ascending, descending) the array of hashes based on the value of the key:value pair
-
     def order(order, column_name) # order = string, column name = string
         table = @table.sort_by{|hsh| hsh[column_name.to_sym]}
         if order == "asc"
             @table.reverse!
         end
         puts @table
+        self
+    end
+
+    def join(column_on_a, filename_db_b, columname_on_db_b) # gets the filename to be joined, as well as the columns to join
+        @join_column_a = column_on_a
+        @db_b = filename_db_b
+        @join_column_b = columname_on_db_b
         self
     end
 
@@ -137,13 +127,46 @@ class MySqliteRequest
         self
     end
 
+    # INSERT INTO students.db VALUES (John, john@johndoe.com, A, https://blog.johndoe.com);
+    # https://www.w3schools.com/mysql/mysql_insert.asp
+    def insert(table_name)
+        
+        if @values.size == 0
+            raise "No values specified!"
+        end
+        CSV.open(table_name, "w") do |csv|
+            csv << @values
+        end
 
+    end
+    def values(data)
+        # validate data
+        table_builder(table_name) ## initializes @headers and @table
+        puts @headers.class
+        if data.size != @headers.size
+            raise "Not enough headers in your inputted data!"
+        end
+        keys = data.keys
+        keys.each_with_index do |key, index|
+            keys[index] = key.to_s
+        end
+        if (keys == @headers)
+            @values = data
+        else
+            raise "Headers don't match"
+        end
+        #@headers.each do |header| # for each header in @headers
+        #end
+        # compare data keys with the keys from @headers
+        # data = (a hash of data on format (key => value)
+        self
+    end
 end
 
 csvr = MySqliteRequest.new
 #csvr.from("nba_player_data").run_from.select("name", "weight").where("weight", "215").run_where.run_select
 #csvr.from("nba_player_data").join("name","nba_players.csv","Player").run_join.order("asc","weight")
-csvr.table_builder("mergeddb.csv").order("desc", "name")
+csvr.values({:name=>"Alaa Abdelnaby", :year_start=>1991, :year_end=>1995, :position=>"F-C", :height=>"6-10", :weight=>240, :birth_date=>"June 24, 1968", :college=>"Duke University"})
 
 testarr = [
     {name: "connor", age: "0", job: "Coder"},
