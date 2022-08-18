@@ -1,6 +1,6 @@
 time = Time.new
 puts "MySQLite version 0.1 #{time.strftime("%Y/%d/%m")}"
-require 'MySqliteRequest'
+require_relative "req.rb"
 
 csvr = MySqliteRequest.new
 
@@ -13,62 +13,63 @@ while (cli_input != "quit")
     input = cli_input.split
 
     case input[0]
-    when "SELECT"
-    # SELECT * FROM students.db;
-        column = input[1]
-        table = input[3]
 
-        # validate query
-        if (!input[2] || !table)
-            puts "No table to select from\n\tSYNTAX: SELECT `column` FROM `table`"
-            next
-        end
+        when "SELECT" # DONE 
+        # SELECT * FROM students.db;
+            column = input[1]
+            table = input[3]
 
-        # execute query
-        puts "csvr.select(#{column}).from(#{table}).run"
-    when "INSERT"
-    # INSERT INTO students.db VALUES (John, john@johndoe.com, A, https://blog.johndoe.com);
-        table = input[2]
+            # validate query
+            if (!input[2] || !table)
+                puts "No table to select from\n\tSYNTAX: SELECT `column` FROM `table`"
+                next
+            end
 
-        # parse values
-        values = cli_input.split("VALUES")
-        values = values[1]
+            # execute query
+            puts csvr.select(column).from(table).run
+        when "INSERT"
+        # INSERT INTO students.db VALUES (John, john@johndoe.com, A, https://blog.johndoe.com);
+            table = input[2]
 
-        # clean up string
-        values.tr!("();", "")
-        values.tr!(" ", "")
+            # parse values
+            values = cli_input.split("VALUES")
+            values = values[1]
 
-        # validate query
-        if (input[1] != "INTO")
-            puts "Invalid syntax\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
-            next
-        end
-        if (!table)
-            puts "No table to selected"
-            next
-        end
-        if (!input[3] || values.size == 0)
-            puts "No values to be insert\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
-            next
-        end
-        
-        # execute query
-        puts "csvr.insert(#{table}).values(#{values})"
-    when "UPDATE"
-    # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
-        table = input[1]
-        # validate query
-        if (!table)
-            puts "No table selected"
-            next
-        end
-        if (!input[2])
-            puts "No column selected"
-            next
-        end
-        if (!input.include? "WHERE")
-            puts "Require criteria"
-            next
+            # clean up string
+            values.tr!("();", "")
+            values.tr!(" ", "")
+
+            # validate query
+            if (input[1] != "INTO")
+                puts "Invalid syntax\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
+                next
+            end
+            if (!table)
+                puts "No table to selected"
+                next
+            end
+            if (!input[3] || values.size == 0)
+                puts "No values to be insert\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
+                next
+            end
+            
+            # execute query
+            puts "csvr.insert(#{table}).values(#{values})"
+        when "UPDATE"
+        # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
+            table = input[1]
+            # validate query
+            if (!table)
+                puts "No table selected"
+                next
+            end
+            if (!input[2])
+                puts "No column selected"
+                next
+            end
+            if (!input.include? "WHERE")
+                puts "Require criteria"
+                next
         end
 
         # get set values

@@ -12,29 +12,17 @@ class MySqliteRequest
         @join_column_a = ''
         @db_b = ''
         @join_column_b = ''
-        @where_results = []
         @select_results = []
         @values = []
         @query_type = nil
         @set_data = nil
+        @where_results = []
     end
 
     def query_checker(query)
         raise "Too many query types" unless @query_type == query
     end
-=begin
-    def run_from() # outputs an array of hashes (@table) from data provided to the from function
-        headers = nil
-        if !@table_name
-            raise "No table found!"
-        end
-        CSV.foreach(@table_name, headers:true, header_converters: :symbol) do
-            |row|
-                headers ||= row.headers
-                @table << row.to_h
-        end
-    end
-=end
+
     def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well
         table = []
         headers = nil
@@ -59,40 +47,35 @@ class MySqliteRequest
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
+        if columns[0] == "*"
+            columns = @headers.map{ |x| x.to_s}
+        end
         @select = columns
         @query_type ||= "select"
         query_checker("select")
         self
     end
 
-    
+    def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table, used for the select command
+        raise " Empty parameters for where!" if @where_column.empty? || @where_criteria.to_s.empty?
+        @table.each do |hash|
+            if hash[@where_column.to_sym] == @where_criteria
+                @where_results.push(hash)
+            end
+        end
+    end
 
     def where(column, criteria) # gets the column and criteria for the run_where function
         @where_column = column
         @where_criteria = criteria
         self
     end
-=begin
-    def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table
-        if @query_type == "select"
-            @table.each do |row|
-                if row[@where_column.to_sym] == @where_criteria
-                    @where_results.push(row)
-                end
-            end
-        end
-        if @query_type == "update"
-            
-        end
-        self
-    end
-=end
+
     def order(order, column_name) # order = string, column name = string
         table = @table.sort_by{|hsh| hsh[column_name.to_sym]}
         if order == "asc"
             @table.reverse!
         end
-        puts @table
         self
     end
 
@@ -186,32 +169,34 @@ class MySqliteRequest
         @set_column = flat[0]
         self
     end
-
-    def delete() 
-        self
-    end
         
     def run()
         case @query_type
         when "select"
-          run_select
+        run_where
+        run_select
+
+        #puts @select_results
         when "insert"
-          run_insert
+        run_insert
         when "update"
-          run_update
+        run_update
         when "delete"
-          run_delete
+        run_delete
         end
     end
 
     def run_select()
-        @where_results.each do |row|
-            @select.each do |param|
-                @select_results.push(row.slice(param.to_sym))
+        if !@where_results.empty? # if the run_where command was run, select from only those narrowed results
+            puts "where results loaded"
+            @table = @where_results
+        end
+        @table.each do |hash|
+            @select.each do |column|
+                @select_results.push(hash.slice(column.to_sym))
             end
         end
-        #puts @select_results
-        self
+        print @select_results
     end
 
     def run_insert()
@@ -254,12 +239,9 @@ class MySqliteRequest
         self
     end
 end
-
+csvr = MySqliteRequest.new
 #csvr.delete(ASDasd).from(table).where("year_start", 2017)
 # DELETE FROM students WHERE name = 'John';
-csvr = MySqliteRequest.new()
-csvr.delete.from("mergeddb.csv").where("year_start",1991).run
+csvr.from("data.csv").select("name").where("weight",225).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
-#csvr.from("nba_player_data").run_from.select("name", "weight").where("weight", "215").run_where.run_select
-#csvr.from("nba_player_data").join("name","nba_players.csv","Player").run_join.order("asc","weight")
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
