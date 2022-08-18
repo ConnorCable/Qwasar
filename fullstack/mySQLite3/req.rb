@@ -38,18 +38,21 @@ class MySqliteRequest
         end
         @table = table
         @headers = headers
+        if @select[0] == "*"
+            @select = @headers.map{ |x| x.to_s} # if you are selecting all columns, then @select becomes the headers, which are all of the columns
+        end
         self
     end
 
     def from(table_name) # loads a table to @table_name, will append .csv if necessary
+        if !table_name.end_with? ".csv"
+            table_name << ".csv"
+        end
         table_builder(table_name)
         self
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
-        if columns[0] == "*"
-            columns = @headers.map{ |x| x.to_s}
-        end
         @select = columns
         @query_type ||= "select"
         query_checker("select")
@@ -57,7 +60,7 @@ class MySqliteRequest
     end
 
     def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table, used for the select command
-        raise " Empty parameters for where!" if @where_column.empty? || @where_criteria.to_s.empty?
+
         @table.each do |hash|
             if hash[@where_column.to_sym] == @where_criteria
                 @where_results.push(hash)
@@ -134,12 +137,10 @@ class MySqliteRequest
             keys[index] = key.to_s
         end
         #check if the keys == headers as one string
+        raise " Headers don't match" if keys != headers_as_strings
+        raise "No values specified" if @values.size == 0
         if (keys == headers_as_strings)
             @values = data
-        else
-            raise "Headers don't match"
-        end
-
         if @values.size == 0
             raise "No values specified!"
         end
@@ -173,7 +174,9 @@ class MySqliteRequest
     def run()
         case @query_type
         when "select"
-        run_where
+        if @where_column && @where_criteria.to_s
+            run_where
+        end
         run_select
 
         #puts @select_results
@@ -191,12 +194,27 @@ class MySqliteRequest
             puts "where results loaded"
             @table = @where_results
         end
-        @table.each do |hash|
-            @select.each do |column|
-                @select_results.push(hash.slice(column.to_sym))
+
+        @table.each_with_index do |hash| # iterate over hashes of the table
+            newhash = Hash.new # create a newhash to add to @select_results
+            @select.each do |column| # passes in every header as an individual string
+                #@select_results.push(hash.slice(column.to_sym)) # @select_results = array of hashes
+                newhash[column.to_sym] = hash[column.to_sym]
             end
+            @select_results.push(newhash)
         end
-        print @select_results
+
+        @select_results.each_with_index do |hash, index|
+            output = ''
+            #print hash
+            hash.each do |key, value|
+                output += value.to_s + "|"
+            end
+            output.chop!
+            print output
+            puts
+        end
+
     end
 
     def run_insert()
@@ -240,8 +258,10 @@ class MySqliteRequest
     end
 end
 csvr = MySqliteRequest.new
+# query - SELECT name FROM data.csv;
+#csvr.select("*").from("data.csv").run
 #csvr.delete(ASDasd).from(table).where("year_start", 2017)
 # DELETE FROM students WHERE name = 'John';
-csvr.from("data.csv").select("name").where("weight",225).run
+#csvr.from("data.csv").select("name").where("weight",225).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
