@@ -22,12 +22,7 @@ class MySqliteRequest
     def query_checker(query)
         raise "Too many query types" unless @query_type == query
     end
-
-    def from(table_name) # loads a table to @table_name, will append .csv if necessary
-        table_builder(table_name)
-        self
-    end
-
+=begin
     def run_from() # outputs an array of hashes (@table) from data provided to the from function
         headers = nil
         if !@table_name
@@ -39,7 +34,7 @@ class MySqliteRequest
                 @table << row.to_h
         end
     end
-
+=end
     def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well
         table = []
         headers = nil
@@ -55,6 +50,12 @@ class MySqliteRequest
         end
         @table = table
         @headers = headers
+        self
+    end
+
+    def from(table_name) # loads a table to @table_name, will append .csv if necessary
+        table_builder(table_name)
+        self
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
@@ -242,23 +243,22 @@ class MySqliteRequest
         @table.each_with_index do |element, index| # element is a hash
             if (@table[index][@where_column.to_sym] == @where_criteria)
                 # delete hash row
-                @table.delete_at_index[index]
+                @table.delete_at(index)
             end
         end
-        puts @table
     end
-    
 
     def delete()
         @query_type = "delete"
         query_checker("delete")
+        self
     end
 end
 
 #csvr.delete(ASDasd).from(table).where("year_start", 2017)
 # DELETE FROM students WHERE name = 'John';
 csvr = MySqliteRequest.new()
-csvr.delete.from("mergeddb.csv").where("year_start",2017).run
+csvr.delete.from("mergeddb.csv").where("year_start",1991).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.from("nba_player_data").run_from.select("name", "weight").where("weight", "215").run_where.run_select
 #csvr.from("nba_player_data").join("name","nba_players.csv","Player").run_join.order("asc","weight")
