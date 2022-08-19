@@ -59,12 +59,13 @@ class CLI_Interface
         
         # parse values
         values = @cli_input.split("VALUES").last # split @input string into array, get everything right of VALUES
-        
+        # gsub(/("[^",]+),([^"]+")/,"")
         # clean up string
         values.tr!("();", "").slice!(0)
-
-        # split to be parse into hash
+        # /(".*?"|[^",\s]+)(?=\s*,|\s*$)/
+        # remove commas in input, select everything in double quotes,  split to be parse into hash
         arr = values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
+    
         
         # validate query
         if (@input[1] != "INTO")
@@ -80,35 +81,29 @@ class CLI_Interface
             get_input()
         end
 
-        # take the input from cli_input -> assign them in order to the headers into it shash
-        # we have a string that we are trying to separate into values based on separation by comma
-        # but, values that have commas in them fuck it up and parse as individual elements
-        # we need to join these separated elements together, or ignore commas inside double quotes
-        # when splitting
         
         # THIS -> "Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "First college, second college"
         
-        @@csvr.insert(table)
+        @@csvr.insert(table) # initialize headers by using the .insert function, they can be accessed with @@csvr.headers
         newhash = Hash.new
+        #
+        # the following loop will take all the inputs and map them to a hash with the correct keys
+        # The headers are extracted from @@csvr.headers
+        # The output -> newhash = {:header1 => value1, :header2 => value2, ...}
         (0...arr.size).each do |i|
-            #print i , " = "
-            #print "'"
-            #puts arr[i]
-            #print "'"
-            #puts
-            #puts @@csvr.headers[i]
-            newhash[@@csvr.headers[i]] = arr[i]
+            arr[i].gsub!('"',"") # removes the extra pair of quotes from a string
+            if Integer(arr[i], exception:false).nil? # can the element NOT be cast as an integer?
+                newhash[@@csvr.headers[i]] = arr[i] # if so, just add it to the hash as normal
+                next
+            end
+            newhash[@@csvr.headers[i]] = arr[i].to_i # cast it as an integer, add it to a hash
         end
-
-        #puts newhash.to_s
-        ## assign each key in the headers with a value from values
-        # {header: value, header: }
-        # execute query
         # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
-        #@@csvr.insert(table).values(values)
+
+        @@csvr.values(newhash).run
         #puts "@@csvr.insert(#{table}).values(#{values})"
-        @@csvr.insert(table).values(newhash)
-        puts
+        #@@csvr.insert(table).values(newhash)
+        puts newhash
         get_input()
     end
     

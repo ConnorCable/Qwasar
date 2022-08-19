@@ -118,42 +118,18 @@ class MySqliteRequest
         # insert function should:
         # build the table using table_builder, which initialized @table and @headers
         @table_name = table_name
-        table_builder(table_name)
-        self
+        table_builder(@table_name)
         @query_type ||= "insert"
         query_checker("insert")
-    end
-
-    def values_validator(data)
-        # validate the data
-        if data.size != @headers.size
-            raise "Not enough headers in your inputted data!"
-        end
-
-        headers_as_strings = []
-        @headers.each_with_index do |element, index|
-            headers_as_strings.push(element.to_s)
-        end
-        keys = data.keys
-        keys.each_with_index do |key, index|
-            keys[index] = key.to_s
-        end
-        #check if the keys == headers as one string
-        raise " Headers don't match" if keys != headers_as_strings
-        raise "No values specified" if @values.size == 0
-        if (keys == headers_as_strings)
-            @values = data
-        end
-        if @values.size == 0
-            raise "No values specified!"
-        end
-
+        puts "Insert run!"
+        self
     end
 
     def values(data)
         # validate the data
-        values_validator(data)
+        raise "keys from data don't match headers" unless data.size == @headers.size and (data.keys - @headers).empty?
         @table.push(data)
+        self
     end
 
     def update(table_name)
@@ -222,11 +198,12 @@ class MySqliteRequest
 
     def run_insert()
         temp_header_array = []
-        @headers.each_with_index do |element, index|
+        @headers.each_with_index do |element, index| # push the headers to temp_header_array to append it to the csv
             temp_header_array.push(@headers[index].to_sym)
         end
-
-        CSV.open("data.csv", "w+") do |csv|
+        puts "run_insert run!"
+        puts @table
+        CSV.open(@table_name, "w+") do |csv|
         csv << temp_header_array
             @table.each do |hash|
                 csv << hash.values
@@ -260,7 +237,7 @@ class MySqliteRequest
         self
     end
 end
-csvr = MySqliteRequest.new
+
 # query - SELECT name FROM data.csv;
 #csvr.select("*").from("data.csv").run
 #csvr.delete(ASDasd).from(table).where("year_start", 2017)
