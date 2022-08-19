@@ -1,6 +1,8 @@
 require 'csv'
 
 class MySqliteRequest
+    attr_accessor :headers
+
 
     def initialize()
         @headers = nil
@@ -141,6 +143,7 @@ class MySqliteRequest
         raise "No values specified" if @values.size == 0
         if (keys == headers_as_strings)
             @values = data
+        end
         if @values.size == 0
             raise "No values specified!"
         end
@@ -265,3 +268,16 @@ csvr = MySqliteRequest.new
 #csvr.from("data.csv").select("name").where("weight",225).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
+
+
+=begin
+1. Test Insert in CLI
+2. Test Update in CLI
+3. Test Delete in CLI
+4. Test Order
+5. Test Order in CLI
+6. Test Join
+7. Test Join in CLI
+=end
+
+

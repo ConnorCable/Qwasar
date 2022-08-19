@@ -12,15 +12,15 @@ class CLI_Interface
     
     def get_input()
         # get user input
-        cli_input = gets.chomp
+        @cli_input = gets.chomp
 
-        if cli_input == "exit"
+        if @cli_input == "exit"
             puts "exiting program"
             return
         end
 
         # parse user input
-        @input = cli_input.split
+        @input = @cli_input.split
     
         case @input[0]
         when "SELECT" # DONE 
@@ -55,16 +55,17 @@ class CLI_Interface
     end
     
     def cli_insert()
-        # INSERT INTO students.db VALUES (John, john@johndoe.com, A, https://blog.johndoe.com);
         table = @input[2]
-    
+        
         # parse values
-        values = cli_input.split("VALUES").last # split @input string into array, get everything right of VALUES
-    
+        values = @cli_input.split("VALUES").last # split @input string into array, get everything right of VALUES
+        
         # clean up string
-        values.tr!("();", "")
-        values.tr!(" ", "")
-    
+        values.tr!("();", "").slice!(0)
+
+        # split to be parse into hash
+        arr = values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
+        
         # validate query
         if (@input[1] != "INTO")
             puts "Invalid syntax\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
@@ -78,10 +79,37 @@ class CLI_Interface
             puts "No values to be insert\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
             get_input()
         end
+
+        # take the input from cli_input -> assign them in order to the headers into it shash
+        # we have a string that we are trying to separate into values based on separation by comma
+        # but, values that have commas in them fuck it up and parse as individual elements
+        # we need to join these separated elements together, or ignore commas inside double quotes
+        # when splitting
         
+        # THIS -> "Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "First college, second college"
+        
+        @@csvr.insert(table)
+        newhash = Hash.new
+        (0...arr.size).each do |i|
+            #print i , " = "
+            #print "'"
+            #puts arr[i]
+            #print "'"
+            #puts
+            #puts @@csvr.headers[i]
+            newhash[@@csvr.headers[i]] = arr[i]
+        end
+
+        #puts newhash.to_s
+        ## assign each key in the headers with a value from values
+        # {header: value, header: }
         # execute query
-        puts "@@csvr.insert(#{table}).values(#{values})"
+        # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
+        #@@csvr.insert(table).values(values)
+        #puts "@@csvr.insert(#{table}).values(#{values})"
+        @@csvr.insert(table).values(newhash)
         puts
+        get_input()
     end
     
     def cli_update()
@@ -128,7 +156,7 @@ class CLI_Interface
         
         # execute query
         # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
-        puts "@@csvr.update(#{table}).set(#{hash}).where(#{where[0]},#{where[1].class})"
+        #puts "@@csvr.update(#{table}).set(#{hash}).where(#{where[0]},#{where[1].class})"
     end
     
     def cli_delete()
