@@ -92,8 +92,8 @@ class MySqliteRequest
     end
 
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
-                   # returns a new table called newtable with the merged rows. headers are not appended yet, still figuring that out
-        csv1, headers1 = table_builder(@table_name) # gets table 1 provided by the from function
+                   # returns a new table called newtable with the merged rows
+        csv1, headers1 = @table, @headers
         csv2, headers2 = table_builder(@db_b) # gets table 2 provided by the join function
         headers = (headers1 + headers2).uniq - [@join_column_b] # joins only unique headers together, removes column_to_join_b
         newtable = []
@@ -108,7 +108,6 @@ class MySqliteRequest
             end
         end
         @table = newtable
-        run_from()
         self
     end
 
@@ -157,8 +156,7 @@ class MySqliteRequest
             run_where
         end
         run_select
-
-        #puts @select_results
+        puts @select_results
         when "insert"
         run_insert
         when "update"
