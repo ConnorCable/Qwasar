@@ -26,7 +26,8 @@ class MySqliteRequest
         raise "Too many query types" unless @query_type == query
     end
 
-    def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well
+    def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well 
+        #TODO : modify table_builder to return its table and values
         table = []
         headers = nil
         CSV.foreach(path, headers: true ,header_converters: :symbol) do |hash| # iterate through rows of the CSV
@@ -39,19 +40,19 @@ class MySqliteRequest
             headers ||= hash.headers
             table << hash.to_h # table is an array, append the hash to it as a hash
         end
-        @table = table
-        @headers = headers
+        
         if @select[0] == "*"
-            @select = @headers.map{ |x| x.to_s} # if you are selecting all columns, then @select becomes the headers, which are all of the columns
+            @select = headers.map{ |x| x.to_s} # if you are selecting all columns, then @select becomes the headers, which are all of the columns
         end
-        self
+        return [table,headers]
     end
 
     def from(table_name) # loads a table to @table_name, will append .csv if necessary
         if !table_name.end_with? ".csv"
             table_name << ".csv"
         end
-        table_builder(table_name)
+        @table_name = table_name
+        @table, @headers = table_builder(@table_name)
         self
     end
 
@@ -99,6 +100,12 @@ class MySqliteRequest
         headers = (headers1 + headers2).uniq - [@join_column_b] # joins only unique headers together, removes column_to_join_b
         newtable = []
         i = 0
+        puts headers2.inspect
+        puts csv2
+        puts 
+        puts headers1.inspect
+        puts csv1
+=begin
         csv1.each do |hashA| #iterate through table 1
             csv2.each do |hashB| # iterate through table 2
                 if hashA[@join_column_a] == hashB[@join_column_b] # if the values match
@@ -109,6 +116,8 @@ class MySqliteRequest
             end
         end
         @table = newtable
+=end
+        puts @table
         self
     end
 
@@ -118,7 +127,7 @@ class MySqliteRequest
         # insert function should:
         # build the table using table_builder, which initialized @table and @headers
         @table_name = table_name
-        table_builder(@table_name)
+        @table, @headers = table_builder(@table_name)
         @query_type ||= "insert"
         query_checker("insert")
         puts "Insert run!"
@@ -134,7 +143,7 @@ class MySqliteRequest
 
     def update(table_name)
         @table_name = table_name
-        table_builder(table_name)
+        @table, @headers = table_builder(table_name)
         @query_type ||= "update"
         query_checker("update")
         self
@@ -151,17 +160,20 @@ class MySqliteRequest
     def run()
         case @query_type
         when "select"
-        if @where_column && @where_criteria.to_s
-            run_where
-        end
-        run_select
-        puts @select_results
+            if @db_b
+                run_join
+            end
+            if @where_column && @where_criteria.to_s
+                run_where
+            end
+            run_select
+            #puts @select_results
         when "insert"
-        update_table
+            update_table
         when "update"
-        run_update
+            run_update
         when "delete"
-        run_delete
+            run_delete
         end
     end
 
@@ -186,8 +198,8 @@ class MySqliteRequest
                 output += value.to_s + "|"
             end
             output.chop!
-            print output
-            puts
+            #print output
+            #puts
         end
 
     end
@@ -195,7 +207,7 @@ class MySqliteRequest
     def update_table()
         temp_header_array = []
         @headers.each_with_index do |element, index| # push the headers to temp_header_array to append it to the csv
-            temp_header_array.push(@headers[index].to_sym)
+            temp_header_array.push(@headers[index].to_s)
         end
         CSV.open(@table_name, "w+") do |csv|
             csv << temp_header_array
@@ -208,7 +220,7 @@ class MySqliteRequest
     # update(table).set({name:Connor, email:ane@janedoe.com, blog: }).where({name:John}).run
     # {name:Connor, email:ane@janedoe.com, blog: jane@janedoe.com}
     def run_update() #= instead of accessing things as an array 
-        @table.each_with_index do |hash, index| # iterates over all the hashes in the array of hashes
+        @table.each do |hash| # iterates over all the hashes in the array of hashes
             if hash[@where_column.to_sym] == @where_criteria # if the where criteria is met, then loop over all the key values in @set_data that you want to replace
                 @set_data.each do |key, value| # loop over every kv that we need to replace
                     hash[key] = value
@@ -221,12 +233,14 @@ class MySqliteRequest
 
     def run_delete()
         # table is an array of hashes table[i] == hash at i index
-        @table.each_with_index do |element, index| # element is a hash
-            if (@table[index][@where_column.to_sym] == @where_criteria)
+        @table.each do |element| # element is a hash
+            if (element[@where_column.to_sym] == @where_criteria)
                 # delete hash row
-                @table.delete_at(index)
+                @table.delete(element)
+                puts "Record Deleted!"
             end
         end
+        update_table()
     end
 
     def delete()
@@ -243,14 +257,15 @@ end
 #csvr.from("data.csv").select("name").where("weight",225).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
-
+csvr = MySqliteRequest.new
+csvr.select("*").from("data.csv").join("name","data_to_join.csv","player").run
 
 =begin
 1. Test Insert in CLI -> DONE
 2. Test Update in CLI -> DONE
-3. Test Delete in CLI
-4. Test Order
-5. Test Order in CLI
+3. Test Delete in CLI -> DONE
+4. Test Order -> MAY NOT NEED?
+5. Test Order in CLI -> MAY NOT NEED
 6. Test Join
 7. Test Join in CLI
 =end

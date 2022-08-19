@@ -24,7 +24,11 @@ class CLI_Interface
     
         case @input[0]
         when "SELECT" # DONE 
-            cli_select()
+            if (@cli_input.include? "JOIN")
+                cli_join()
+            else
+                cli_select()
+            end
         when "INSERT"
             cli_insert()
         when "UPDATE"
@@ -133,32 +137,66 @@ class CLI_Interface
         where[1].chop!
 
         # execute query
-        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor", age = 99 WHERE name = 'Thanh N';
+        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor" WHERE name = 'Thanh N';
         # Thanh N,1996,2022,F-C,5-7,143,"Oct 1, 1996",Alameda College
         @@csvr.update(table).set(hash).where(where[0],where[1]).run
         get_input
     end
     
     def cli_delete()
-        # DELETE FROM students WHERE name = 'John';
         table = @input[2]
-    
+        
         # validate query
         if (@input[1] != "FROM" || !table)
             puts "Invalid syntax"
             get_input()
         end
-    
+        
         # get where column & criteria
-        where = cli_input.split("WHERE").last
+        where = @cli_input.split("WHERE").last
         where = where.split("=")
         where[0].tr!(" ", "")
         where[1] = where[1].match(/'.*?'/).to_s
         where[1].slice!(0)
         where[1].chop!
-    
+        
+
         # execute query
-        puts "@@csvr.delete.from(#{table}).where(#{where[0]},#{where[1]})"
+        # DELETE FROM data.csv WHERE name = 'Connor';
+        @@csvr.delete.from(table).where(where[0],where[1]).run
+        get_input()
+    end
+
+    def cli_join()
+=begin
+                           [0]      |          [1]
+SELECT age, weight FROM data.csv JOIN data_to_join ON name = player;
+   [0]       |      [1]
+data_to_join ON name = player
+
+
+def join(column_on_a, filename_db_b, columname_on_db_b) # gets the filename to be joined, as well as the columns to join
+        @join_column_a = column_on_a
+        @db_b = filename_db_b
+        @join_column_b = columname_on_db_b
+        self
+    end
+
+[0] = second argument in join()
+[0]     [1]
+name = player
+@input
+@cli_input
+=end
+
+join_query = @cli_input.split("JOIN").last
+table_to_join, data_to_join = join_query.split("ON")
+puts table_to_join
+puts data_to_join
+
+
+
+
     end
 end
 
