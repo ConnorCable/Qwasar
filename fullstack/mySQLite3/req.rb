@@ -100,11 +100,12 @@ class MySqliteRequest
         headers = (headers1 + headers2).uniq - [@join_column_b] # joins only unique headers together, removes column_to_join_b
         newtable = []
         i = 0
-        puts headers2.inspect
-        puts csv2
-        puts 
-        puts headers1.inspect
-        puts csv1
+
+        csv1.each do |hashA|
+            csv2.each do |hashB|
+                if hashA
+            end
+        end
 =begin
         csv1.each do |hashA| #iterate through table 1
             csv2.each do |hashB| # iterate through table 2
@@ -115,8 +116,8 @@ class MySqliteRequest
                 end
             end
         end
-        @table = newtable
 =end
+        @table = newtable
         puts @table
         self
     end
