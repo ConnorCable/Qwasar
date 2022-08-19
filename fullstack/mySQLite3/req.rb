@@ -17,7 +17,8 @@ class MySqliteRequest
         @select_results = []
         @values = []
         @query_type = nil
-        @set_data = nil
+        @set_data = []
+        @set_column = []
         @where_results = []
     end
 
@@ -141,11 +142,9 @@ class MySqliteRequest
 
     # update(table).set({name:Connor, email:ane@janedoe.com, blog: }).where({name:John}).run
     # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
-    def set(data)
-        raise "Set data already loaded" if @set_data
-        flat = data.flatten
-        @set_data = flat[1]
-        @set_column = flat[0]
+    def set(data) # set needs to take in a hash, and then @set_data needs to be odd indexes , @set_columns are all the even index
+        #raise "Set data already loaded" if @set_data
+        @set_data = data
         self
     end
         
@@ -158,7 +157,7 @@ class MySqliteRequest
         run_select
         puts @select_results
         when "insert"
-        run_insert
+        update_table
         when "update"
         run_update
         when "delete"
@@ -175,7 +174,6 @@ class MySqliteRequest
         @table.each_with_index do |hash| # iterate over hashes of the table
             newhash = Hash.new # create a newhash to add to @select_results
             @select.each do |column| # passes in every header as an individual string
-                #@select_results.push(hash.slice(column.to_sym)) # @select_results = array of hashes
                 newhash[column.to_sym] = hash[column.to_sym]
             end
             @select_results.push(newhash)
@@ -194,16 +192,14 @@ class MySqliteRequest
 
     end
 
-    def run_insert()
+    def update_table()
         temp_header_array = []
         @headers.each_with_index do |element, index| # push the headers to temp_header_array to append it to the csv
             temp_header_array.push(@headers[index].to_sym)
         end
-        puts "run_insert run!"
-        puts @table
         CSV.open(@table_name, "w+") do |csv|
-        csv << temp_header_array
-            @table.each do |hash|
+            csv << temp_header_array
+                @table.each do |hash|
                 csv << hash.values
             end
         end
@@ -211,12 +207,16 @@ class MySqliteRequest
 
     # update(table).set({name:Connor, email:ane@janedoe.com, blog: }).where({name:John}).run
     # {name:Connor, email:ane@janedoe.com, blog: jane@janedoe.com}
-    def run_update()
-        @table.each_with_index do |element, index| # element is a hash
-            if (@table[index][@where_column.to_sym] == @where_criteria)
-                @table[index][@set_column] = @set_data
+    def run_update() #= instead of accessing things as an array 
+        @table.each_with_index do |hash, index| # iterates over all the hashes in the array of hashes
+            if hash[@where_column.to_sym] == @where_criteria # if the where criteria is met, then loop over all the key values in @set_data that you want to replace
+                @set_data.each do |key, value| # loop over every kv that we need to replace
+                    hash[key] = value
+                end
             end
         end
+
+       update_table()  
     end
 
     def run_delete()
@@ -246,8 +246,8 @@ end
 
 
 =begin
-1. Test Insert in CLI
-2. Test Update in CLI
+1. Test Insert in CLI -> DONE
+2. Test Update in CLI -> DONE
 3. Test Delete in CLI
 4. Test Order
 5. Test Order in CLI

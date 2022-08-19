@@ -55,42 +55,25 @@ class CLI_Interface
     end
     
     def cli_insert()
-        table = @input[2]
-        
-        # parse values
+        table = @input[2]# parse values
         values = @cli_input.split("VALUES").last # split @input string into array, get everything right of VALUES
-        # gsub(/("[^",]+),([^"]+")/,"")
-        # clean up string
-        values.tr!("();", "").slice!(0)
-        # /(".*?"|[^",\s]+)(?=\s*,|\s*$)/
-        # remove commas in input, select everything in double quotes,  split to be parse into hash
-        arr = values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
-    
-        
-        # validate query
-        if (@input[1] != "INTO")
-            puts "Invalid syntax\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
-            get_input()
-        end
-        if (!table)
-            puts "No table to selected"
-            get_input()
-        end
-        if (@input[3] != "VALUES" || values.size == 0)
-            puts "No values to be insert\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
-            get_input()
-        end
+        values.tr!("();", "").slice!(0)# clean up string
 
-        
-        # THIS -> "Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "First college, second college"
+        # select everything in double quotes, reject indices with just quotes, empty strings, or just spaces
+        arr = values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
+        # validate query
+        if (@input[1] != "INTO" || !table || @input[3] != "VALUES" || values.size == 0)
+            puts "Invalid Syntax:\n\tSYNTAX: INSERT INTO `table` VALUES (column1, column2, column3, ...)"
+            get_input()
+        end
         
         @@csvr.insert(table) # initialize headers by using the .insert function, they can be accessed with @@csvr.headers
-        newhash = Hash.new
-        #
+        newhash = {}
         # the following loop will take all the inputs and map them to a hash with the correct keys
         # The headers are extracted from @@csvr.headers
         # The output -> newhash = {:header1 => value1, :header2 => value2, ...}
-        (0...arr.size).each do |i|
+
+        (0...arr.size).each do |i| # input: array , empty hash
             arr[i].gsub!('"',"") # removes the extra pair of quotes from a string
             if Integer(arr[i], exception:false).nil? # can the element NOT be cast as an integer?
                 newhash[@@csvr.headers[i]] = arr[i] # if so, just add it to the hash as normal
@@ -98,60 +81,62 @@ class CLI_Interface
             end
             newhash[@@csvr.headers[i]] = arr[i].to_i # cast it as an integer, add it to a hash
         end
-        # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
 
+        # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
         @@csvr.values(newhash).run
-        #puts "@@csvr.insert(#{table}).values(#{values})"
-        #@@csvr.insert(table).values(newhash)
-        puts newhash
         get_input()
     end
-    
+
+    # user for converting key values to it appropriate data type
+    def match_symbol_to_data(arr)
+        hash = {}
+        arr.each_with_index do |element, index|
+            if index.even?
+                element.tr!(",= ","")
+                if Integer(arr[index+1], exception: false).nil? 
+                    hash[arr[index].to_sym] = arr[index+1].gsub('"',"")
+                else
+                    hash[arr[index].to_sym] = arr[index+1].gsub('"',"").to_i
+                end
+            end
+        end
+        return hash
+    end
+
     def cli_update()
         table = @input[1]
 
         # validate query
-        if (!table)
-            puts "No table selected"
-            get_input()
-        end
-        if (@input[2] != "SET")
-            puts "No column selected"
-            get_input()
-        end
-        if (!@input.include? "WHERE")
-            puts "Require criteria"
+        if (!table || @input[2] != "SET" || (!@cli_input.include? "WHERE") )
+            puts "Invalid Syntax \n\tSYNTAX: FROM table SET column = value WHERE column2 = value2"
             get_input()
         end
     
         # get set values
-        set_values = cli_input.split("SET").last.split("WHERE").first # get everything between WHERE and SET
-        set_values_arr = set_values.split(",")#
+        set_values = @cli_input.split("SET").last.split("WHERE").first # get everything between WHERE and SET
         
+        # clean up set values string
+        set_values.chop!.slice!(0)
+
+        # split up set_values string but ignore comma inside double quote
+        arr = set_values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
+
         # convert columns new content to hash
-        hash = {}
-        set_values_arr.each_with_index do |element, index|
-            # get key value and clean up 
-            str = element.split("=")
-            str[0].tr!(" ","")
-            key = str[0]
-            value = str[1].match(/'.*?'/).to_s
-            value.slice!(0)
-            value.chop!
-            hash[key.to_sym] = value
-        end
-        
+        hash = match_symbol_to_data(arr)
+
         # get where_column & where_criteria
-        where = cli_input.split("WHERE").last
+        where = @cli_input.split("WHERE").last
         where = where.split("=")
         where[0].tr!(" ", "")
         where[1] = where[1].match(/'.*?'/).to_s
         where[1].slice!(0)
         where[1].chop!
-        
+
         # execute query
-        # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
-        #puts "@@csvr.update(#{table}).set(#{hash}).where(#{where[0]},#{where[1].class})"
+        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor", age = 99 WHERE name = 'Thanh N';
+        # Thanh N,1996,2022,F-C,5-7,143,"Oct 1, 1996",Alameda College
+        @@csvr.update(table).set(hash).where(where[0],where[1]).run
+        get_input
     end
     
     def cli_delete()
@@ -159,12 +144,8 @@ class CLI_Interface
         table = @input[2]
     
         # validate query
-        if (@input[1] != "FROM")
+        if (@input[1] != "FROM" || !table)
             puts "Invalid syntax"
-            get_input()
-        end
-        if (!table)
-            puts "No table selected"
             get_input()
         end
     
