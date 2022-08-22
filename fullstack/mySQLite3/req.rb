@@ -27,7 +27,9 @@ class MySqliteRequest
     end
 
     def table_builder(path) # intakes a csv file, outputs an array of hashes corresponding to the row of data. outputs the headers as well 
-        #TODO : modify table_builder to return its table and values
+        if !path.end_with? ".csv" 
+            path << ".csv"
+        end
         table = []
         headers = nil
         CSV.foreach(path, headers: true ,header_converters: :symbol) do |hash| # iterate through rows of the CSV
@@ -57,7 +59,7 @@ class MySqliteRequest
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
-        @select = columns
+        @select = columns.flatten(1)
         @query_type ||= "select"
         query_checker("select")
         self
@@ -93,25 +95,6 @@ class MySqliteRequest
         self
     end
 
-    def merge_hashes(a,b)
-        c = {}
-
-        a.each do |k,v|
-            c[k] = v        
-        end
-        b.each do |k,v|
-            if k == @join_column_b.to_sym
-                next
-            end
-            k = k.to_s + "(table 2)"
-            c[k.to_sym] = v
-        end
-            
-        return c
-        
-
-    end
-
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
                    # returns a new table called newtable with the merged rows
         csv1, headers1 = @table, @headers
@@ -131,7 +114,6 @@ class MySqliteRequest
         end
 
         @table = newtable
-        puts @table
         self
     end
 
@@ -174,14 +156,14 @@ class MySqliteRequest
     def run()
         case @query_type
         when "select"
-            if @db_b
+            if @db_b != ""
+                puts "Run_join ran"
                 run_join
             end
             if @where_column && @where_criteria.to_s
                 run_where
             end
             run_select
-            #puts @select_results
         when "insert"
             update_table
         when "update"
@@ -198,7 +180,7 @@ class MySqliteRequest
         end
 
         @table.each_with_index do |hash| # iterate over hashes of the table
-            newhash = Hash.new # create a newhash to add to @select_results
+            newhash = {} # create a newhash to add to @select_results
             @select.each do |column| # passes in every header as an individual string
                 newhash[column.to_sym] = hash[column.to_sym]
             end
@@ -212,8 +194,8 @@ class MySqliteRequest
                 output += value.to_s + "|"
             end
             output.chop!
-            #print output
-            #puts
+            print output
+            puts
         end
 
     end
@@ -271,8 +253,7 @@ end
 #csvr.from("data.csv").select("name").where("weight",225).run
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
-csvr = MySqliteRequest.new
-csvr.select("name").from("data.csv").join("name","data_to_join.csv","player").run
+#csvr.select("name").from("data.csv").join("name","data_to_join.csv","player").run
 
 =begin
 1. Test Insert in CLI -> DONE

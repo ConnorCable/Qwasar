@@ -25,10 +25,10 @@ class CLI_Interface
         case @input[0]
         when "SELECT" # DONE 
             if (@cli_input.include? "JOIN")
+                puts "cli_join run"
                 cli_join()
-            else
-                cli_select()
             end
+            cli_select()
         when "INSERT"
             cli_insert()
         when "UPDATE"
@@ -41,20 +41,26 @@ class CLI_Interface
     end
 
     def cli_select()
-    
-        column = @input[1]
-        table = @input[3]
+        # SELECT name, weight FROM data.csv JOIN data_to_join ON name = player
+        # SELECT name, weight FROM data.csv
+        if @cli_input.include? "JOIN"
+            column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
+            table = @cli_input.split("FROM").last.split("JOIN").first.tr!(" ", "")
+        else
+            column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
+            table = @cli_input.split("FROM").last.tr!(" ", "")
+        end
+
+
     
         # validate query
-        if (@input[2] != "FROM" || !table)#              0      1       2     3
-            puts "No table to select from\n\tSYNTAX: SELECT `column` FROM `table`"
+        if (!@cli_input.include? "FROM" || !table || (column.include? " ") )
+            raise "Invalid Syntax \n\tSYNTAX: SELECT column1, column2 FROM table"
             get_input()
         end
-    
         # execute query
         #puts "@@csvr.select(#{column}).from(#{table}).run"
         @@csvr.select(column).from(table).run
-        puts
         get_input()
     end
     
@@ -168,35 +174,21 @@ class CLI_Interface
     end
 
     def cli_join()
-=begin
-                           [0]      |          [1]
-SELECT age, weight FROM data.csv JOIN data_to_join ON name = player;
-   [0]       |      [1]
-data_to_join ON name = player
+    # SELECT name, weight FROM data.csv JOIN data_to_join ON name = player
+
+    join_query = @cli_input.split("JOIN").last
+    table_to_join, data_to_join = join_query.split("ON")
+    table_to_join.tr!(" ","")
+    data_to_join = data_to_join.split("=")
+
+    #puts "@@csvr.join(#{data_to_join[0]},#{table_to_join},#{data_to_join[1]})"
+    @@csvr.join(data_to_join[0].tr!(" ", ""),table_to_join,data_to_join[1].tr!(" ", ""))
 
 
-def join(column_on_a, filename_db_b, columname_on_db_b) # gets the filename to be joined, as well as the columns to join
-        @join_column_a = column_on_a
-        @db_b = filename_db_b
-        @join_column_b = columname_on_db_b
-        self
     end
 
-[0] = second argument in join()
-[0]     [1]
-name = player
-@input
-@cli_input
-=end
-
-join_query = @cli_input.split("JOIN").last
-table_to_join, data_to_join = join_query.split("ON")
-puts table_to_join
-puts data_to_join
-
-
-
-
+    def cli_order()
+        
     end
 end
 
