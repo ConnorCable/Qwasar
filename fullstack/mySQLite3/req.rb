@@ -5,9 +5,9 @@ class MySqliteRequest
 
 
     def initialize()
-        @headers = nil
-        @table_name = nil
-        @table = nil
+        @headers = nil # contains the headers of the csv file
+        @table_name = nil # contains the path to the table
+        @table = nil # contains the parsed CSV file from the CSV gem
         @select = []
         @where_column = ''
         @where_criteria = ''
@@ -93,6 +93,25 @@ class MySqliteRequest
         self
     end
 
+    def merge_hashes(a,b)
+        c = {}
+
+        a.each do |k,v|
+            c[k] = v        
+        end
+        b.each do |k,v|
+            if k == @join_column_b.to_sym
+                next
+            end
+            k = k.to_s + "(table 2)"
+            c[k.to_sym] = v
+        end
+            
+        return c
+        
+
+    end
+
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
                    # returns a new table called newtable with the merged rows
         csv1, headers1 = @table, @headers
@@ -103,20 +122,14 @@ class MySqliteRequest
 
         csv1.each do |hashA|
             csv2.each do |hashB|
-                if hashA
-            end
-        end
-=begin
-        csv1.each do |hashA| #iterate through table 1
-            csv2.each do |hashB| # iterate through table 2
-                if hashA[@join_column_a] == hashB[@join_column_b] # if the values match
-                    merger = hashA.merge(hashB) # merge the hashes together
-                    newtable[i] = merger unless hashA.merge(hashB).nil? # add the merged hash to the new table
+                if hashA[@join_column_a.to_sym] = hashB[@join_column_b.to_sym]
+                    hashB.delete(@join_column_b.to_sym)
+                    newtable[i] = hashA.merge(hashB)
                     i+=1
                 end
             end
         end
-=end
+
         @table = newtable
         puts @table
         self
@@ -259,7 +272,7 @@ end
 #csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
 #csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
 csvr = MySqliteRequest.new
-csvr.select("*").from("data.csv").join("name","data_to_join.csv","player").run
+csvr.select("name").from("data.csv").join("name","data_to_join.csv","player").run
 
 =begin
 1. Test Insert in CLI -> DONE
