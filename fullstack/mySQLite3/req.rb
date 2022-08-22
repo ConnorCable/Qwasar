@@ -20,6 +20,8 @@ class MySqliteRequest
         @set_data = []
         @set_column = []
         @where_results = []
+        @order = ""
+        @order_column = ""
     end
 
     def query_checker(query)
@@ -84,11 +86,15 @@ class MySqliteRequest
     end
 
     def order(order, column_name) # order = string, column name = string
-        table = @table.sort_by{|hsh| hsh[column_name.to_sym]}
-        if order == "asc"
-            @table.reverse!
+        @order = order
+        @order_column = column_name
+    end
+
+    def run_order()
+        @select_results = @select_results.sort_by{|hsh| hsh[@order_column.to_sym]}
+        if @order.downcase == "desc"
+            @select_results.reverse!
         end
-        self
     end
 
     def join(column_on_a, filename_db_b, columname_on_db_b) # gets the filename to be joined, as well as the columns to join
@@ -188,6 +194,10 @@ class MySqliteRequest
                 newhash[column.to_sym] = hash[column.to_sym]
             end
             @select_results.push(newhash)
+        end
+
+        if @order
+            run_order
         end
 
         @select_results.each_with_index do |hash, index|

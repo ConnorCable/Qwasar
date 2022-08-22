@@ -28,6 +28,9 @@ class CLI_Interface
                 puts "cli_join run"
                 cli_join()
             end
+            if (@cli_input.include? "ORDER BY")
+                cli_order()
+            end
             cli_select()
         when "INSERT"
             cli_insert()
@@ -43,6 +46,7 @@ class CLI_Interface
     def cli_select()
         # SELECT name, weight FROM data.csv JOIN data_to_join ON name = player
         # SELECT name, weight FROM data.csv
+        # SELECT name, weight FROM data.csv ORDER BY name ASC
         if @cli_input.include? "JOIN"
             column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
             table = @cli_input.split("FROM").last.split("JOIN").first.tr!(" ", "")
@@ -151,7 +155,6 @@ class CLI_Interface
     
     def cli_delete()
         table = @input[2]
-        
         # validate query
         if (@input[1] != "FROM" || !table)
             puts "Invalid syntax"
@@ -188,7 +191,13 @@ class CLI_Interface
     end
 
     def cli_order()
+        #SELECT column1, column2 FROM table_name ORDER BY column1 ASC|DESC; 
+        #SELECT name, weight FROM data.csv ORDER BY name ASC
+        @cli_input, parsed = @cli_input.split("ORDER BY")
+        @cli_input.chop!
 
+        column, order = parsed.split(" ")
+        @@csvr.order(order,column)
     end
 end
 
