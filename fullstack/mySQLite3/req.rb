@@ -59,7 +59,10 @@ class MySqliteRequest
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
-        @select = columns.flatten(1)
+        if columns.class == Array
+            columns = columns.flatten(1)
+        end
+        @select = columns
         @query_type ||= "select"
         query_checker("select")
         self

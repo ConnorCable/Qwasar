@@ -188,7 +188,7 @@ class CLI_Interface
     end
 
     def cli_order()
-        
+
     end
 end
 
