@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const Scores = document.querySelector("#score")
     const StartButton = document.querySelector("#start-button")
     const width = 10
+    var audio = document.querySelector('#audio');
+    var sadsong = new Audio("sadsong.mp3")
     let nextRandom = 0
     let timerid
     let score = 0
@@ -185,6 +187,30 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     }
 
+    function isAtRight() {
+        return current.some(index=> (currentPosition + index + 1) % width === 0)  
+      }
+      
+      function isAtLeft() {
+        return current.some(index=> (currentPosition + index) % width === 0)
+      }
+
+      function checkRotatedPosition(P){
+        P = P || currentpos      //get current position.  Then, check if the piece is near the left side.
+        if ((P+1) % width < 4) {         //add 1 because the position index can be 1 less than where the piece is (with how they are indexed).     
+          if (isAtRight()){            //use actual position to check if it's flipped over to right side
+            currentpos += 1    //if so, add one to wrap it back around
+            checkRotatedPosition(P) //check again.  Pass position from start, since long block might need to move more.
+            }
+        }
+        else if (P % width > 5) {
+          if (isAtLeft()){
+            currentpos -= 1
+          checkRotatedPosition(P)
+          }
+        }
+      }
+
 
     StartButton.addEventListener('click', () => {
         if (timerid) {
@@ -221,6 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (current.some(index => squares[currentpos + index].classList.contains('taken'))) {
             Scores.innerHTML = "end"
             clearInterval(timerid)
+            audio.pause()
+            sadsong.loop = false;
+            sadsong.play()
+            //squares.forEach(square => square.classList.remove("taken"))
+            squares.forEach(square => square.classList.remove("tetromino"))
         }
     }
 
