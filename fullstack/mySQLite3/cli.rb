@@ -186,8 +186,6 @@ class CLI_Interface
 
     #puts "@@csvr.join(#{data_to_join[0]},#{table_to_join},#{data_to_join[1]})"
     @@csvr.join(data_to_join[0].tr!(" ", ""),table_to_join,data_to_join[1].tr!(" ", ""))
-
-
     end
 
     def cli_order()
