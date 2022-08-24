@@ -44,10 +44,12 @@ class MySqliteRequest
             headers ||= hash.headers
             table << hash.to_h # table is an array, append the hash to it as a hash
         end
-        
-        if @select[0] == "*"
+=begin
+        if @select[0] == "*" 
+            puts "select all detected"
             @select = headers.map{ |x| x.to_s} # if you are selecting all columns, then @select becomes the headers, which are all of the columns
         end
+=end
         return [table,headers]
     end
 
@@ -62,16 +64,19 @@ class MySqliteRequest
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
         if columns.class == Array
+
             columns = columns.flatten(1)
         end
         @select = columns
+        if columns[0] == "*"
+            @select = headers.map{ |x| x.to_s}
+        end
         @query_type ||= "select"
         query_checker("select")
         self
     end
 
     def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table, used for the select command
-
         @table.each do |hash|
             if hash[@where_column.to_sym] == @where_criteria
                 @where_results.push(hash)
@@ -85,9 +90,10 @@ class MySqliteRequest
         self
     end
 
-    def order(order, column_name) # order = string, column name = string
+    def order(column_name,order) # order = string, column name = string
         @order = order
         @order_column = column_name
+        self
     end
 
     def run_order()
@@ -104,6 +110,19 @@ class MySqliteRequest
         self
     end
 
+    def merge_hash(a,b)
+        newhash = {}
+        a.each do |keyA, valA|
+            newhash[keyA] = valA
+        end
+        b.delete(@join_column_b.to_sym)
+        b.each do |keyB, valB|
+            newhash[(keyB.to_s + "(table 2)").to_sym] = valB
+        end
+        return newhash
+    end
+
+
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
                    # returns a new table called newtable with the merged rows
         csv1, headers1 = @table, @headers
@@ -114,9 +133,8 @@ class MySqliteRequest
 
         csv1.each do |hashA|
             csv2.each do |hashB|
-                if hashA[@join_column_a.to_sym] = hashB[@join_column_b.to_sym]
-                    hashB.delete(@join_column_b.to_sym)
-                    newtable[i] = hashA.merge(hashB)
+                if hashA[@join_column_a.to_sym] = hashB[@join_column_b.to_sym]          
+                    newtable[i] = merge_hash(hashA,hashB)
                     i+=1
                 end
             end
@@ -126,8 +144,6 @@ class MySqliteRequest
         self
     end
 
-    # INSERT INTO students.db VALUES (John, john@johndoe.com, A, https://blog.johndoe.com);
-    # https://www.w3schools.com/mysql/mysql_insert.asp
     def insert(table_name)
         # insert function should:
         # build the table using table_builder, which initialized @table and @headers
@@ -166,7 +182,7 @@ class MySqliteRequest
         case @query_type
         when "select"
             if @db_b != ""
-                puts "Run_join ran"
+
                 run_join
             end
             if @where_column && @where_criteria.to_s
@@ -180,11 +196,33 @@ class MySqliteRequest
         when "delete"
             run_delete
         end
+        reset()
     end
+
+    def reset()
+        @headers = nil # contains the headers of the csv file
+        @table_name = nil # contains the path to the table
+        @table = nil # contains the parsed CSV file from the CSV gem
+        @select = []
+        @where_column = ''
+        @where_criteria = ''
+        @join_column_a = ''
+        @db_b = ''
+        @join_column_b = ''
+        @select_results = []
+        @values = []
+        @query_type = nil
+        @set_data = []
+        @set_column = []
+        @where_results = []
+        @order = ""
+        @order_column = ""
+    end
+
 
     def run_select()
         if !@where_results.empty? # if the run_where command was run, select from only those narrowed results
-            puts "where results loaded"
+
             @table = @where_results
         end
 
@@ -277,5 +315,4 @@ end
 6. Test Join
 7. Test Join in CLI
 =end
-
 
