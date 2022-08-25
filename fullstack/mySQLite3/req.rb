@@ -3,7 +3,6 @@ require 'csv'
 class MySqliteRequest
     attr_accessor :headers
 
-
     def initialize()
         @headers = nil # contains the headers of the csv file
         @table_name = nil # contains the path to the table
@@ -44,12 +43,6 @@ class MySqliteRequest
             headers ||= hash.headers
             table << hash.to_h # table is an array, append the hash to it as a hash
         end
-=begin
-        if @select[0] == "*" 
-            puts "select all detected"
-            @select = headers.map{ |x| x.to_s} # if you are selecting all columns, then @select becomes the headers, which are all of the columns
-        end
-=end
         return [table,headers]
     end
 
@@ -130,9 +123,6 @@ class MySqliteRequest
         csv2, headers2 = table_builder(@db_b) # gets table 2 provided by the join function
 
         joined_table = []
-       
-        # join the table together, then narrow it down based on where criteria
-        
         @headers = headers1 + headers2
         
             csv1.each_with_index do |hash, i|
@@ -143,10 +133,9 @@ class MySqliteRequest
 
                 end
             end
-
-
-
-
+        if @select == headers1
+            @select = @headers # make the display columns all the headers from csv1 and csv2
+        end
         @table = joined_table
         run_where
         self
@@ -178,10 +167,7 @@ class MySqliteRequest
         self
     end
 
-    # update(table).set({name:Connor, email:ane@janedoe.com, blog: }).where({name:John}).run
-    # UPDATE students SET email = 'jane@janedoe.com', blog = 'https://blog.janedoe.com' WHERE name = 'Jane';
-    def set(data) # set needs to take in a hash, and then @set_data needs to be odd indexes , @set_columns are all the even index
-        #raise "Set data already loaded" if @set_data
+    def set(data)
         @set_data = data
         self
     end
@@ -247,9 +233,8 @@ class MySqliteRequest
 
         @select_results = @select_results.uniq
 
-        @select_results.each_with_index do |hash, index|
+        @select_results.each_with_index do |hash, index| # format the hashes for output
             output = ''
-            #print hash
             hash.each do |key, value|
                 output += value.to_s + "|"
             end
@@ -273,9 +258,7 @@ class MySqliteRequest
         end
     end
 
-    # update(table).set({name:Connor, email:ane@janedoe.com, blog: }).where({name:John}).run
-    # {name:Connor, email:ane@janedoe.com, blog: jane@janedoe.com}
-    def run_update() #= instead of accessing things as an array 
+    def run_update()
         @table.each do |hash| # iterates over all the hashes in the array of hashes
             if hash[@where_column.to_sym] == @where_criteria # if the where criteria is met, then loop over all the key values in @set_data that you want to replace
                 @set_data.each do |key, value| # loop over every kv that we need to replace
@@ -305,25 +288,4 @@ class MySqliteRequest
         self
     end
 end
-
-# query - SELECT name FROM data.csv;
-#csvr.select("*").from("data.csv").run
-#csvr.delete(ASDasd).from(table).where("year_start", 2017)
-# DELETE FROM students WHERE name = 'John';
-#csvr.from("data.csv").select("name").where("weight",225).run
-#csvr.update("mergeddb.csv").set({height: 999}).where("year_start",2017).run
-#csvr.insert("mergeddb.csv").values({"name"=>"Alaa Abdelnaby", "year_start"=>1991, "year_end"=>1995, "position"=>"F-C", "height"=>"6-10", "weight"=>240, "birth_date"=>"June 24, 1968", "college"=>"Duke University"})
-#csvr.select("name").from("data.csv").join("name","data_to_join.csv","player").run
-
-=begin
-1. Test Insert in CLI -> DONE
-2. Test Update in CLI -> DONE
-3. Test Delete in CLI -> DONE
-4. Test Order -> MAY NOT NEED?
-5. Test Order in CLI -> MAY NOT NEED
-6. Test Join
-7. Test Join in CLI
-=end
-#csvr.from("data.csv").select("*").where("weight",240).join("name","data_to_join.csv","player").run
-
 

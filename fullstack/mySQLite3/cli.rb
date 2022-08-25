@@ -14,7 +14,7 @@ class CLI_Interface
         # get user input
         @cli_input = gets.chomp
 
-        if @cli_input == "exit"
+        if @cli_input == "exit" 
             puts "exiting program"
             return
         end
@@ -24,8 +24,10 @@ class CLI_Interface
     
         case @input[0]
         when "SELECT" # DONE 
+            if (@cli_input.include? "WHERE")
+                cli_where()
+            end
             if (@cli_input.include? "JOIN")
-                puts "cli_join run"
                 cli_join()
             end
             if (@cli_input.include? "ORDER BY")
@@ -35,8 +37,10 @@ class CLI_Interface
         when "INSERT"
             cli_insert()
         when "UPDATE"
+            cli_where()
             cli_update()
         when "DELETE"
+            cli_where()
             cli_delete()
         else
             puts "Invalid input."
@@ -54,8 +58,6 @@ class CLI_Interface
             column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
             table = @cli_input.split("FROM").last.tr!(" ", "")
         end
-
-
     
         # validate query
         if (!@cli_input.include? "FROM" || !table || (column.include? " ") )
@@ -64,11 +66,30 @@ class CLI_Interface
         end
         # execute query
         #puts "@@csvr.select(#{column}).from(#{table}).run"
-        @@csvr.select(column).from(table).run
+        @@csvr.from(table).select(column).run
         get_input()
+    end
+
+    def cli_where() #                     |
+        # SELECT * FROM nba_player_data WHERE weight = 240
+        @cli_input, where = @cli_input.split(" WHERE ") # splits the string in between WHERE, the first part becomes @cli_input, second part becomes where
+        column, criteria = where.split(" = ")
+        if Integer(criteria, exception:false) # if the value can be cast as an integer, do so
+            criteria = criteria.to_i
+        else
+            # if it is a string, trim the quotes
+            criteria.tr!("';", "")
+        end
+        puts "======="
+        puts column
+        puts "======="
+        puts criteria
+        puts "======="
+        @@csvr.where(column,criteria)
     end
     
     def cli_insert()
+        # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
         table = @input[2]# parse values
         values = @cli_input.split("VALUES").last # split @input string into array, get everything right of VALUES
         values.tr!("();", "").slice!(0)# clean up string
@@ -96,7 +117,7 @@ class CLI_Interface
             newhash[@@csvr.headers[i]] = arr[i].to_i # cast it as an integer, add it to a hash
         end
 
-        # INSERT INTO data.csv VALUES ("Thanh N", 1996, 2022, F-C, 5-7, 143, "Oct 1, 1996", "Alameda College")
+        
         @@csvr.values(newhash).run
         get_input()
     end
@@ -118,38 +139,27 @@ class CLI_Interface
     end
 
     def cli_update()
+        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor" WHERE name = 'Alex Abrines';
+        # after cli_where => UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor"
         table = @input[1]
 
         # validate query
-        if (!table || @input[2] != "SET" || (!@cli_input.include? "WHERE") )
+        if (!table || @input[2] != "SET")
             puts "Invalid Syntax \n\tSYNTAX: FROM table SET column = value WHERE column2 = value2"
             get_input()
         end
     
         # get set values
-        set_values = @cli_input.split("SET").last.split("WHERE").first # get everything between WHERE and SET
+        set_values = @cli_input.split(" SET ").last# get everything between WHERE and SET
         
-        # clean up set values string
-        set_values.chop!.slice!(0)
-
         # split up set_values string but ignore comma inside double quote
         arr = set_values.split(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/).reject{|elem| elem == ', ' || elem == " " || elem == "" || elem.empty?}
 
         # convert columns new content to hash
         hash = match_symbol_to_data(arr)
-
-        # get where_column & where_criteria
-        where = @cli_input.split("WHERE").last
-        where = where.split("=")
-        where[0].tr!(" ", "")
-        where[1] = where[1].match(/'.*?'/).to_s
-        where[1].slice!(0)
-        where[1].chop!
-
-        # execute query
-        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor" WHERE name = 'Thanh N';
+        
         # Thanh N,1996,2022,F-C,5-7,143,"Oct 1, 1996",Alameda College
-        @@csvr.update(table).set(hash).where(where[0],where[1]).run
+        @@csvr.update(table).set(hash).run
         get_input
     end
     
@@ -161,18 +171,11 @@ class CLI_Interface
             get_input()
         end
         
-        # get where column & criteria
-        where = @cli_input.split("WHERE").last
-        where = where.split("=")
-        where[0].tr!(" ", "")
-        where[1] = where[1].match(/'.*?'/).to_s
-        where[1].slice!(0)
-        where[1].chop!
-        
+
 
         # execute query
         # DELETE FROM data.csv WHERE name = 'Connor';
-        @@csvr.delete.from(table).where(where[0],where[1]).run
+        @@csvr.delete.from(table).run
         get_input()
     end
 
