@@ -69,7 +69,7 @@ class MySqliteRequest
         end
         @select = columns
         if columns[0] == "*"
-            @select = headers.map{ |x| x.to_s}
+            @select = @headers.map{ |x| x.to_s}
         end
         @query_type ||= "select"
         query_checker("select")
@@ -82,6 +82,7 @@ class MySqliteRequest
                 @where_results.push(hash)
             end
         end
+
     end
 
     def where(column, criteria) # gets the column and criteria for the run_where function
@@ -115,32 +116,39 @@ class MySqliteRequest
         a.each do |keyA, valA|
             newhash[keyA] = valA
         end
-        b.delete(@join_column_b.to_sym)
         b.each do |keyB, valB|
-            newhash[(keyB.to_s + "(table 2)").to_sym] = valB
+            newhash[(keyB.to_s).to_sym] = valB
         end
+
         return newhash
     end
 
 
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
                    # returns a new table called newtable with the merged rows
-        csv1, headers1 = @table, @headers
+        csv1, headers1 = table_builder(@table_name)
         csv2, headers2 = table_builder(@db_b) # gets table 2 provided by the join function
-        headers = (headers1 + headers2).uniq - [@join_column_b] # joins only unique headers together, removes column_to_join_b
-        newtable = []
-        i = 0
 
-        csv1.each do |hashA|
-            csv2.each do |hashB|
-                if hashA[@join_column_a.to_sym] = hashB[@join_column_b.to_sym]          
-                    newtable[i] = merge_hash(hashA,hashB)
-                    i+=1
+        joined_table = []
+       
+        # join the table together, then narrow it down based on where criteria
+        
+        @headers = headers1 + headers2
+        
+            csv1.each_with_index do |hash, i|
+                csv2.each_with_index do |hashb, j|
+                    if csv1[i][@join_column_a.to_sym] == csv2[j][@join_column_b.to_sym]
+                        joined_table[i] = csv1[i].merge(csv2[j])
+                    end
+
                 end
             end
-        end
 
-        @table = newtable
+
+
+
+        @table = joined_table
+        run_where
         self
     end
 
@@ -182,7 +190,6 @@ class MySqliteRequest
         case @query_type
         when "select"
             if @db_b != ""
-
                 run_join
             end
             if @where_column && @where_criteria.to_s
@@ -237,6 +244,8 @@ class MySqliteRequest
         if @order
             run_order
         end
+
+        @select_results = @select_results.uniq
 
         @select_results.each_with_index do |hash, index|
             output = ''
@@ -315,4 +324,6 @@ end
 6. Test Join
 7. Test Join in CLI
 =end
+#csvr.from("data.csv").select("*").where("weight",240).join("name","data_to_join.csv","player").run
+
 
