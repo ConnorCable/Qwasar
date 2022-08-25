@@ -70,7 +70,11 @@ class MySqliteRequest
     end
 
     def run_where() # pushes the results of the "where" query to @where_results, which is a narrowed data set from our original table, used for the select command
+        @table.compact!
         @table.each do |hash|
+            if hash == nil
+                next
+            end
             if hash[@where_column.to_sym] == @where_criteria
                 @where_results.push(hash)
             end
@@ -220,6 +224,9 @@ class MySqliteRequest
         end
 
         @table.each_with_index do |hash| # iterate over hashes of the table
+            if hash == nil
+                next
+            end
             newhash = {} # create a newhash to add to @select_results
             @select.each do |column| # passes in every header as an individual string
                 newhash[column.to_sym] = hash[column.to_sym]

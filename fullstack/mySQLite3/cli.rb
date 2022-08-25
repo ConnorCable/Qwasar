@@ -8,6 +8,7 @@ class CLI_Interface
     def initialize()
         @cli_input = "" # string
         @input = nil    # array
+        @table = ''
     end
     
     def get_input()
@@ -24,14 +25,15 @@ class CLI_Interface
     
         case @input[0]
         when "SELECT" # DONE 
+            if (@cli_input.include? "ORDER BY")
+                cli_order()
+            end
             if (@cli_input.include? "WHERE")
+                puts "cli_where run"
                 cli_where()
             end
             if (@cli_input.include? "JOIN")
                 cli_join()
-            end
-            if (@cli_input.include? "ORDER BY")
-                cli_order()
             end
             cli_select()
         when "INSERT"
@@ -51,13 +53,8 @@ class CLI_Interface
         # SELECT name, weight FROM data.csv JOIN data_to_join ON name = player
         # SELECT name, weight FROM data.csv
         # SELECT name, weight FROM data.csv ORDER BY name ASC
-        if @cli_input.include? "JOIN"
-            column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
-            table = @cli_input.split("FROM").last.split("JOIN").first.tr!(" ", "")
-        else
-            column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
-            table = @cli_input.split("FROM").last.tr!(" ", "")
-        end
+        column = @cli_input.split("FROM").first.tr("SELECT ", "").split(",")
+        @table = @cli_input.split("FROM").last.tr!(" ", "")
     
         # validate query
         if (!@cli_input.include? "FROM" || !table || (column.include? " ") )
@@ -66,13 +63,14 @@ class CLI_Interface
         end
         # execute query
         #puts "@@csvr.select(#{column}).from(#{table}).run"
-        @@csvr.from(table).select(column).run
+        @@csvr.from(@table).select(column).run
         get_input()
     end
 
     def cli_where() #                     |
         # SELECT * FROM nba_player_data WHERE weight = 240
         @cli_input, where = @cli_input.split(" WHERE ") # splits the string in between WHERE, the first part becomes @cli_input, second part becomes where
+        puts @cli_input
         column, criteria = where.split(" = ")
         if Integer(criteria, exception:false) # if the value can be cast as an integer, do so
             criteria = criteria.to_i
@@ -170,11 +168,6 @@ class CLI_Interface
             puts "Invalid syntax"
             get_input()
         end
-        
-
-
-        # execute query
-        # DELETE FROM data.csv WHERE name = 'Connor';
         @@csvr.delete.from(table).run
         get_input()
     end
@@ -182,23 +175,30 @@ class CLI_Interface
     def cli_join()
     # SELECT name, weight FROM data.csv JOIN data_to_join ON name = player
 
-    join_query = @cli_input.split("JOIN").last
-    table_to_join, data_to_join = join_query.split("ON")
+    @cli_input, join_query = @cli_input.split(" JOIN ")
+    table_to_join, data_to_join = join_query.split(" ON ")
     table_to_join.tr!(" ","")
-    data_to_join = data_to_join.split("=")
-
+    data_to_join = data_to_join.split(" = ")
+    
+    puts "==== DEBUG JOIN ===="
+    puts "data_to_join[0]"
+    puts data_to_join[0]
+    puts "data_to_join[1]"
+    puts data_to_join[1]
+    puts "table_to_join"
+    puts table_to_join
+    puts "===================="
     #puts "@@csvr.join(#{data_to_join[0]},#{table_to_join},#{data_to_join[1]})"
-    @@csvr.join(data_to_join[0].tr!(" ", ""),table_to_join,data_to_join[1].tr!(" ", ""))
+    @@csvr.join(data_to_join[0],table_to_join,data_to_join[1])
     end
 
     def cli_order()
         #SELECT column1, column2 FROM table_name ORDER BY column1 ASC|DESC; 
         #SELECT name, weight FROM data.csv ORDER BY name ASC
-        @cli_input, parsed = @cli_input.split("ORDER BY")
-        @cli_input.chop!
-
+        @cli_input, parsed = @cli_input.split(" ORDER BY ")
+        puts parsed
         column, order = parsed.split(" ")
-        @@csvr.order(order,column)
+        @@csvr.order(column,order)
     end
 end
 

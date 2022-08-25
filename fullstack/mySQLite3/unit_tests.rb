@@ -71,43 +71,12 @@ puts "======================= INSERT DATA =================================="
 puts "INSERT INTO data.csv VALUES (\"Thanh N\", 1996, 2022, F-C, 5-7, 143, \"Oct 1, 1996\", \"Alameda College\") "
 puts 
 csvr.insert("data").values(hash1).run
-=begin
+
 puts "=============================="
-puts "***select col from data where condition order by col asc***"
+puts "SELECT * FROM data WHERE weight = 225 ORDER BY name asc"
 puts "=============================="
-csvr.from("nba_players.csv").select("*").where("weight", "77").order("name","asc").run
-=end
+csvr.from("data").select("*").where("weight", 77).order("name","asc").run
 
 
-
-
-
-
-
-
-
-
-
-
-        # check if where is set
-        # smashing table together if where is not set
-=begin
-        if (@where_column && @where_criteria)
-            # printing out based table only
-            csv1.each do |hashA|
-                # pushing data from tableA to tableC based on @where_criteria
-                csv2.each do |hashB|
-                    if (hashA[@where_column.to_sym] == @where_criteria && hashB[@where_column.to_sym] == @where_criteria)
-                        # add to tableC
-                        joined_table[jIndex] = hashA
-                        jIndex+=1
-                        break
-                    end
-                end
-            end
-        else
-            # printing out smashed table
-        end
-=end
 
 
