@@ -21,6 +21,8 @@ class MySqliteRequest
         @where_results = []
         @order = ""
         @order_column = ""
+        @where_flag = false
+        @columns = nil
     end
 
     def query_checker(query)
@@ -56,6 +58,7 @@ class MySqliteRequest
     end
 
     def select(*columns) # gets the columns of interest for the run_select column -> is run last after being narrowed by the run_where function
+        @columns = columns
         if columns.class == Array
 
             columns = columns.flatten(1)
@@ -79,7 +82,7 @@ class MySqliteRequest
                 @where_results.push(hash)
             end
         end
-
+        @where_flag = true
     end
 
     def where(column, criteria) # gets the column and criteria for the run_where function
@@ -108,19 +111,6 @@ class MySqliteRequest
         self
     end
 
-    def merge_hash(a,b)
-        newhash = {}
-        a.each do |keyA, valA|
-            newhash[keyA] = valA
-        end
-        b.each do |keyB, valB|
-            newhash[(keyB.to_s).to_sym] = valB
-        end
-
-        return newhash
-    end
-
-
     def run_join() # joins the two csv tables together where entry_from_table_a[column_to_join_a] ==  entry_from_table_b[column_to_join_b]
                    # returns a new table called newtable with the merged rows
         csv1, headers1 = table_builder(@table_name)
@@ -128,7 +118,7 @@ class MySqliteRequest
 
         joined_table = []
         @headers = headers1 + headers2
-        
+
             csv1.each_with_index do |hash, i|
                 csv2.each_with_index do |hashb, j|
                     if csv1[i][@join_column_a.to_sym] == csv2[j][@join_column_b.to_sym]
@@ -137,11 +127,14 @@ class MySqliteRequest
 
                 end
             end
-        if @select == headers1
-            @select = @headers # make the display columns all the headers from csv1 and csv2
+        if @columns[0] == "*"
+            @select = @headers.map{ |x| x.to_s}
         end
+        
         @table = joined_table
-        run_where
+        if @where_flag
+            run_where
+        end
         self
     end
 
@@ -152,7 +145,7 @@ class MySqliteRequest
         @table, @headers = table_builder(@table_name)
         @query_type ||= "insert"
         query_checker("insert")
-        puts "Insert run!"
+        puts "Record Inserted!"
         self
     end
 
@@ -168,6 +161,7 @@ class MySqliteRequest
         @table, @headers = table_builder(table_name)
         @query_type ||= "update"
         query_checker("update")
+        puts "Record Updated"
         self
     end
 
@@ -182,7 +176,8 @@ class MySqliteRequest
             if @db_b != ""
                 run_join
             end
-            if @where_column && @where_criteria.to_s
+            if @where_column != '' 
+                #puts "run where executed"
                 run_where
             end
             run_select
@@ -214,14 +209,20 @@ class MySqliteRequest
         @where_results = []
         @order = ""
         @order_column = ""
+        @where_flag = false
+        @columns = nil
     end
 
 
     def run_select()
-        if !@where_results.empty? # if the run_where command was run, select from only those narrowed results
-
+        if @where_results.size != 0 && @where_flag # if the run_where command was run, select from only those narrowed results
             @table = @where_results
         end
+        if @where_results.size == 0 && @where_flag
+            puts "No results found! Check your where statement"
+            return
+        end
+
 
         @table.each_with_index do |hash| # iterate over hashes of the table
             if hash == nil

@@ -29,7 +29,6 @@ class CLI_Interface
                 cli_order()
             end
             if (@cli_input.include? "WHERE")
-                puts "cli_where run"
                 cli_where()
             end
             if (@cli_input.include? "JOIN")
@@ -68,21 +67,16 @@ class CLI_Interface
     end
 
     def cli_where() #                     |
-        # SELECT * FROM nba_player_data WHERE weight = 240
+        # UPDATE data.csv SET college = "University of California, Santa Cruz", name = "Connor" WHERE name = "Alex Abrines"
         @cli_input, where = @cli_input.split(" WHERE ") # splits the string in between WHERE, the first part becomes @cli_input, second part becomes where
-        puts @cli_input
         column, criteria = where.split(" = ")
         if Integer(criteria, exception:false) # if the value can be cast as an integer, do so
             criteria = criteria.to_i
         else
             # if it is a string, trim the quotes
             criteria.tr!("';", "")
+            criteria.tr!('"', "")
         end
-        puts "======="
-        puts column
-        puts "======="
-        puts criteria
-        puts "======="
         @@csvr.where(column,criteria)
     end
     
@@ -179,15 +173,7 @@ class CLI_Interface
     table_to_join, data_to_join = join_query.split(" ON ")
     table_to_join.tr!(" ","")
     data_to_join = data_to_join.split(" = ")
-    
-    puts "==== DEBUG JOIN ===="
-    puts "data_to_join[0]"
-    puts data_to_join[0]
-    puts "data_to_join[1]"
-    puts data_to_join[1]
-    puts "table_to_join"
-    puts table_to_join
-    puts "===================="
+
     #puts "@@csvr.join(#{data_to_join[0]},#{table_to_join},#{data_to_join[1]})"
     @@csvr.join(data_to_join[0],table_to_join,data_to_join[1])
     end
@@ -196,7 +182,7 @@ class CLI_Interface
         #SELECT column1, column2 FROM table_name ORDER BY column1 ASC|DESC; 
         #SELECT name, weight FROM data.csv ORDER BY name ASC
         @cli_input, parsed = @cli_input.split(" ORDER BY ")
-        puts parsed
+
         column, order = parsed.split(" ")
         @@csvr.order(column,order)
     end

@@ -34,6 +34,8 @@ TODO - How to install your project? npm install? make? make re?
 This is a vanilla ruby project with the dependencies included in-file
 ## Usage
 
+For unit tests: ruby unit_tests.rb
+
 For class usage:
 require relative 'my_sqlite_request.rb'
 my_sqlite_request.rb ---> Contains the MySqliteRequest class
