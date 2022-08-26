@@ -28,9 +28,6 @@ have run, only that it is a CSV table in a certain format.
 Our case function, described in run(), determines which part of the trie we execute.
 
 ## Installation
-TODO - How to install your project? npm install? make? make re?
-
-
 This is a vanilla ruby project with the dependencies included in-file
 ## Usage
 
